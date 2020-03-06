@@ -10,6 +10,7 @@ authRouter
     const loginUser = { user_name, password };
 
     for(const [key, value] of Object.entries(loginUser))
+      // eslint-disable-next-line eqeqeq
       if(value == null)
         return res.status(400).json({
           error: `Missing '${key}' in request body`
