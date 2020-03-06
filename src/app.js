@@ -6,6 +6,7 @@ const helmet = require('helmet');
 const { NODE_ENV } = require('./config');
 const thingsRouter = require('./things/things-router');
 const reviewsRouter = require('./reviews/reviews-router');
+const authRouter = require('./auth/auth-router');
 
 const app = express();
 
@@ -17,10 +18,12 @@ app.use(helmet());
 
 app.use('/api/things', thingsRouter);
 app.use('/api/reviews', reviewsRouter);
+app.use('/api/auth', authRouter);
 
 app.use(function errorHandler(error, req, res, next) {
   let response;
   if (NODE_ENV === 'production') {
+    console.log(error);
     response = { error: 'Server error' };
   } else {
     console.error(error);

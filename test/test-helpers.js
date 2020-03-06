@@ -1,4 +1,5 @@
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 function makeUsersArray() {
   return [
@@ -223,12 +224,24 @@ function makeThingsFixtures() {
 }
 
 function cleanTables(db) {
-  return db.raw(
-    `TRUNCATE
-      thingful_things,
-      thingful_users,
-      thingful_reviews
-      RESTART IDENTITY CASCADE`
+  return db.transaction(trx =>
+    trx.raw(
+      `TRUNCATE
+        thingful_things,
+        thingful_users,
+        thingful_reviews
+      `
+    )
+      .then(() =>
+        Promise.all([
+          trx.raw('ALTER SEQUENCE thingful_things_id_seq minvalue 0 START WITH 1'),
+          trx.raw('ALTER SEQUENCE thingful_users_id_seq minvalue 0 START WITH 1'),
+          trx.raw('ALTER SEQUENCE thingful_reviews_id_seq minvalue 0 START WITH 1'),
+          trx.raw('SELECT setval(\'thingful_things_id_seq\', 0)'),
+          trx.raw('SELECT setval(\'thingful_users_id_seq\', 0)'),
+          trx.raw('SELECT setval(\'thingful_reviews_id_seq\', 0)'),
+        ])
+      )
   );
 }
 
@@ -273,9 +286,12 @@ function seedMaliciousThing(db, user, thing) {
     );
 }
 
-function makeAuthHeader(user) {
-  const token = Buffer.from(`${user.user_name}:${user.password}`).toString('base64');
-  return `Basic ${token}`;
+function makeAuthHeader(user, secret = process.env.JWT_SECRET) {
+  const token = jwt.sign({ user_ud: user.id }, secret, {
+    subject: user.user_name,
+    algorithm: 'HS256'
+  });
+  return `Bearer ${token}`;
 }
 
 module.exports = {
